@@ -51,6 +51,34 @@ app.get('/threads', async (req, res) => {
     res.json(threads)
 })
 
+app.get('/threads/:threadId/', async (req, res) => {
+    const { user } = req.query
+    const { threadId } = req.params
+
+    const thread = await Thread.findById(threadId)
+
+    if (!thread) {
+        return res.status(404).json({
+            message: 'Thread not found.'
+        })
+    }
+
+    if (!thread.participants.includes(user)) {
+        return res.status(400).json({
+            message: 'Cannot access the thread'
+        })
+    }
+
+    const recipient = thread.participants.filter(p => p !== user)[0]
+    const messages = await Message.find({ thread: thread._id })
+
+    res.json({
+        _id: threadId,
+        recipient,
+        messages
+    })
+})
+
 io.on('connection', (socket) => {
     console.log('a user has connected')
 
