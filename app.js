@@ -83,20 +83,25 @@ io.on('connection', (socket) => {
     console.log('a user has connected')
 
     socket.on('chat', async (payload) => {
+        let newThread = false
         const { sender, recipient } = payload
         let thread = await Thread.findOne({ participants: { $all: [sender, recipient] } })
         if (thread) { // update thread timestamp
             thread.updatedAt = Date.now()
-            await thread.save()
         } else { // new thread
+            newThread = true
             thread = new Thread({ participants: [sender, recipient]})
-            await thread.save()
         }
+        await thread.save()
         const msg = new Message({...payload, thread: thread._id })
         await msg.save()
         // Broadcast the message to the recipient
         io.emit(`chat::${payload.sender}:${payload.recipient}`, payload.message)
         io.emit(`new message:${recipient}`)
+
+        if (newThread) {
+            io.emit(`chat init::${sender}:${recipient}`, thread._id)
+        }
     })
 })
 
