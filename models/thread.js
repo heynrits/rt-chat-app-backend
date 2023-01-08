@@ -1,7 +1,8 @@
 const mongoose = require('mongoose')
 
 const schema = new mongoose.Schema({
-    participants: [String]
+    participants: [String], // username
+    unread: [String] // username
 }, {
     timestamps: true
 })

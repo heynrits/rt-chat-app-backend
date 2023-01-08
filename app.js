@@ -40,11 +40,13 @@ app.get('/threads', async (req, res) => {
     threads = await Promise.all(threads.map( async (t) => {
         const recipient = t.participants.filter((p) => p !== user)[0]
         const lastMessage = await Message.findOne({ thread: t._id }).sort({ createdAt: -1 })
+        const unread = t.unread.includes(user)
 
         return {
             _id: t._id,
             recipient,
             lastMessage,
+            unread,
         }
     }))
 
@@ -87,10 +89,14 @@ io.on('connection', (socket) => {
         const { sender, recipient } = payload
         let thread = await Thread.findOne({ participants: { $all: [sender, recipient] } })
         if (thread) { // update thread timestamp
+            thread.unread = [recipient]
             thread.updatedAt = Date.now()
         } else { // new thread
             newThread = true
-            thread = new Thread({ participants: [sender, recipient]})
+            thread = new Thread({
+                participants: [sender, recipient],
+                unread: [recipient],
+            })
         }
         await thread.save()
         const msg = new Message({...payload, thread: thread._id })
@@ -102,6 +108,15 @@ io.on('connection', (socket) => {
         if (newThread) {
             io.emit(`chat init::${sender}:${recipient}`, thread._id)
         }
+    })
+
+    // User reads/opens a thread
+    socket.on('chat::read', async ({ user, threadId }) => {
+        await Thread.findOneAndUpdate(
+            { _id: threadId},
+            { $pull: { unread: user }},
+            { timestamps: false }
+        )
     })
 })
 
