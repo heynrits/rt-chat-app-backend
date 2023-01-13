@@ -118,6 +118,10 @@ io.on('connection', (socket) => {
             { timestamps: false }
         )
     })
+
+    socket.on('chat::typing', ({ threadId, sender, recipient }) => {
+        io.emit(`chat:typing::${threadId}:${sender}`)
+    })
 })
 
 server.listen(3000, () => {
