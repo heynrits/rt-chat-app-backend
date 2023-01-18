@@ -1,3 +1,4 @@
+const _ = require('lodash')
 const Message = require("../models/message")
 const Thread = require("../models/thread")
 
@@ -28,8 +29,12 @@ const getAllThreads = async (req) => {
 
 const getThread = async (req) => {
     try {
-        const { user } = req.query
+        let { user, page } = req.query
         const { threadId } = req.params
+
+        page = _.max([parseInt(page), 1])
+        const pageLimit = 5
+        const offset = (page-1)*pageLimit;
 
         const thread = await Thread.findById(threadId)
 
@@ -43,11 +48,18 @@ const getThread = async (req) => {
 
         const recipient = thread.participants.filter(p => p !== user)[0]
         const messages = await Message.find({ thread: thread._id })
+                                        .skip(offset)
+                                        .limit(pageLimit)
+                                        .sort({ createdAt: -1 })
+
+        const totalMessages = await Message.count({ thread: thread._id })
+        const hasNext = totalMessages > offset+pageLimit
 
         return {
             _id: threadId,
             recipient,
-            messages
+            messages,
+            hasNext
         }
     } catch (e) {
         throw e
