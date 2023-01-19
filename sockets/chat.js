@@ -23,6 +23,8 @@ const onChat = (io) => (
         io.emit(`new message:${recipient}`)
         // Signal sent to the listener in "new message" screen
         io.emit(`chat init::${sender}:${recipient}`, thread._id)
+        // Notify sender the success of sending the message
+        io.emit(`chat:sent::${sender}:${recipient}`)
     }
 )
 
