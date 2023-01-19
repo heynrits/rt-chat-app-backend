@@ -4,14 +4,12 @@ const Thread = require("../models/thread")
 // A new message is sent
 const onChat = (io) => (
     async (payload) => {
-        let newThread = false
         const { sender, recipient } = payload
         let thread = await Thread.findOne({ participants: { $all: [sender, recipient] } })
         if (thread) { // update thread timestamp
             thread.unread = [recipient]
             thread.updatedAt = Date.now()
         } else { // new thread
-            newThread = true
             thread = new Thread({
                 participants: [sender, recipient],
                 unread: [recipient],
@@ -23,10 +21,8 @@ const onChat = (io) => (
         // Broadcast the message to the recipient
         io.emit(`chat::${payload.sender}:${payload.recipient}`, payload.message)
         io.emit(`new message:${recipient}`)
-
-        if (newThread) {
-            io.emit(`chat init::${sender}:${recipient}`, thread._id)
-        }
+        // Signal sent to the listener in "new message" screen
+        io.emit(`chat init::${sender}:${recipient}`, thread._id)
     }
 )
 
