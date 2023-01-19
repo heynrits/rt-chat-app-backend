@@ -1,7 +1,13 @@
+const dotenv = require('dotenv')
 const http = require('http')
 const express = require('express')
 const { Server } = require('socket.io')
 const mongoose = require('mongoose')
+const _ = require('lodash')
+
+dotenv.config()
+
+const ENVIRONMENT = _.get(process.env, 'NODE_ENV', 'development')
 
 // Routers
 const THREADS_ROUTER = require('./routers/threads')
@@ -24,8 +30,17 @@ const io = new Server(server, {
 })
 
 // Database
+let dbConnectionStr = 'mongodb://127.0.0.1:27017/rt-chat-app'
+if (ENVIRONMENT === 'production') {
+    const DB_CLUSTER = _.get(process.env, 'DB_CLUSTER')
+    const DB_NAME = _.get(process.env, 'DB_NAME')
+    const DB_USERNAME = _.get(process.env, 'DB_USERNAME')
+    const DB_PASSWORD = _.get(process.env, 'DB_PASSWORD')
+    dbConnectionStr = `mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER}.fcosuu8.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`
+}
+console.log(dbConnectionStr)
 mongoose.set('strictQuery', true)
-mongoose.connect('mongodb://127.0.0.1:27017/rt-chat-app', (error) => {
+mongoose.connect(dbConnectionStr, (error) => {
     if (error) {
         console.error(error)
     } else {
@@ -50,5 +65,5 @@ io.on('connection', (socket) => {
 })
 
 server.listen(3000, () => {
-    console.log('RT Chat app server listening to port 3000')
+    console.log(`[${ENVIRONMENT}] RT Chat app server listening to port 3000`)
 })
