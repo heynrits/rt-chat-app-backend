@@ -33,7 +33,7 @@ const getThread = async (req) => {
         const { threadId } = req.params
 
         page = _.max([parseInt(page), 1])
-        const pageLimit = 5
+        const pageLimit = 20
         const offset = (page-1)*pageLimit;
 
         const thread = await Thread.findById(threadId)
